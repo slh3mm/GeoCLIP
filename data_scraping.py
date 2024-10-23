@@ -1,4 +1,5 @@
 import os
+import time
 from dotenv import load_dotenv; load_dotenv();
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -23,7 +24,7 @@ password_input.send_keys(os.environ["PWORD"])
 login_button.click()
 
 # Redirect to game page, press play
-wait.until(EC.url_to_be("https://www.geoguessr.com/"))
+time.sleep(1)
 driver.get("https://www.geoguessr.com/maps/world/play")
 play_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'button[data-qa="start-game-button"]')))
 play_button.click()
