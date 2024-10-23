@@ -1,8 +1,4 @@
-import time
-import requests
 import os
-import json
-import random
 from dotenv import load_dotenv; load_dotenv();
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -10,47 +6,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
-
-# Uses api endpoint to retrieve lat, lng of a game
-def api_retrieve_coords(game_id, session):
-    # Existing game_id
-    game_id = "gAiSgeQDjv8uT9ZL"
-    game_id = "nlcIiBl9ebYC8BXh"
-    response = session.get(f"https://www.geoguessr.com/api/v3/games/{game_id}")
-
-    # If 200 OK, parse JSON and return lat, lng
-    if response.status_code == 200:
-        data = json.loads(response.text)
-        print(data)
-        lat = data['rounds'][0]['lat']
-        lng = data['rounds'][0]['lng']
-        return lat, lng
-    else:
-        print(f"Error: {response.status_code}")
-
-# Uses api endpoint to log into geoguessr
-def api_login(session):
-    # Construct Payload using username and password for geoguessr
-    login_url = "https://www.geoguessr.com/api/v3/accounts/signin/"
-    username = os.environ["UNAME"]
-    password = os.environ["PWORD"]
-    payload = {
-        "email": username,
-        "password": password,
-        "remember": True
-    }
-    
-    # Send POST request, return response
-    response = session.post(login_url, json=payload)
-    if response.status_code == 200:
-        print("Login successful")
-    else:
-        print(f"Error: {response.status_code}")
-    
-# Create session, set cookies using retrieved NCFA from login at https://geoguessr.com
-session = requests.Session()
-ncfa = os.environ["NCFA"]
-session.cookies.set("_ncfa", ncfa, domain="www.geoguessr.com")
 
 # Initialize Chrome Session, create wait object, go to geoguessr.com
 driver = webdriver.Chrome()
