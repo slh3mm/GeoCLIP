@@ -20,7 +20,7 @@ def api_login(session):
     if response.status_code == 200:
         print("Login successful")
     else:
-        print(f"Error: {response.status_code}")
+        raise(f"Error: {response.status_code}")
         
 # Uses api endpoint to retrieve lat, lng of a game
 def api_retrieve_coords(game_id, session):
@@ -32,22 +32,20 @@ def api_retrieve_coords(game_id, session):
     # If 200 OK, parse JSON and return lat, lng
     if response.status_code == 200:
         data = json.loads(response.text)
-        print(data)
-        lat = data['rounds'][0]['lat']
-        lng = data['rounds'][0]['lng']
-        return lat, lng
+        coords = [(round['lat'], round['lng']) for round in data['rounds']]
+        return coords
     else:
-        print(f"Error: {response.status_code}")
+        raise(f"Error: {response.status_code}")
     
 # Create session, set cookies using retrieved NCFA from login at https://geoguessr.com
 session = requests.Session()
-ncfa = os.environ["NCFA"]
-session.cookies.set("_ncfa", ncfa, domain="www.geoguessr.com")
-
+# ncfa = os.environ["NCFA"]
+# session.cookies.set("_ncfa", ncfa, domain="www.geoguessr.com")
+print(api_retrieve_coords("gAiSgeQDjv8uT9ZL", session))
 # Iterate through game_ids.txt, retrieve lat, lng of each game
-with open("game_ids.txt", "r") as f:
-    game_ids = f.read().splitlines()
-    for game_id in game_ids:
-        lat, lng = api_retrieve_coords(game_id, session)
-        print(f"Lat: {lat}, Lng: {lng}")
-    f.close()
+# with open("game_ids.txt", "r") as f:
+#     game_ids = f.read().splitlines()
+#     for game_id in game_ids:
+#         lat, lng = api_retrieve_coords(game_id, session)
+#         print(f"Lat: {lat}, Lng: {lng}")
+#     f.close()
