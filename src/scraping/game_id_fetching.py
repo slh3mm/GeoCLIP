@@ -1,7 +1,12 @@
 import os
 import requests
 import json
+import time
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 from geopy.geocoders import Nominatim, Photon
+from datasets import load_dataset
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -43,10 +48,6 @@ def logout(session):
 
 # Uses api endpoint to retrieve lat, lng of a game
 def retrieve_coords(game_id, session):
-    # Existing game_id(s) for testing
-    # game_id = "gAiSgeQDjv8uT9ZL"
-    # game_id = "nlcIiBl9ebYC8BXh"
-    # game_id = "rYsAcVqH2alGCMXn"
     response = session.get(f"https://www.geoguessr.com/api/v3/games/{game_id}")
 
     # If 200 OK, parse JSON and return lat, lng
@@ -62,9 +63,13 @@ def retrieve_coords(game_id, session):
 
 
 # Open game id file and coords file, iterate through game_ids.txt, retrieve lat, lng of each game, write to coords.txt
-def id_to_coords(session):
+def id_to_coords():
+    # Create session, set cookies using retrieved NCFA from login at https://geoguessr.com
+    session = requests.Session()
+    session.cookies.set("_ncfa", os.environ["NCFA"], domain="www.geoguessr.com")
+    
     with open("src/scraping/game_ids.txt", "r") as id_f:
-        with open("src/scraping/coords.txt", "w") as coord_f:
+        with open("src/scraping/coords.csv", "w") as coord_f:
             game_ids = id_f.read().splitlines()
             for game_id in game_ids:
                 for lat, lng in retrieve_coords(game_id, session):
@@ -73,39 +78,52 @@ def id_to_coords(session):
         id_f.close()
 
 
-def coords_to_country():
-    geolocator = Photon(user_agent="geoapiExercises")
-    with open("src/scraping/coords.txt", "r") as coord_f:
-        coords = coord_f.read().splitlines()
-        for coord in coords:
-            lat, lng = coord.split(", ")
-            location = geolocator.reverse(f"{lat}, {lng}").raw["properties"]
-            metadata = (
-                location["country"],
-                location["city"],
-                location["postcode"],
-                location["locality"],
-                location["county"],
-                location["type"],
-                location["osm_key"],
-                location["district"],
-                location["osm_value"],
-                location["name"],
-                location["state"],
-            )
-            # TODO: retrieve image from google api
-            #img = 
-        coord_f.close()
+def coords_to_metadata():
+    data_arr = []
+    coords_df = pd.read_csv("src/scraping/coords.csv", header=None, names=["lat", "lng"])
+    for i, row in coords_df.iterrows():
+        lat, lng = row["lat"], row["lng"]
+        response = requests.get(f"https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat={lat}&lon={lng}").json()
+        data = response["features"][0]["properties"]["geocoding"]
+        data["img_name"] = f"img_{i:05d}.jpg"
+        data["lat"] = lat
+        data["lng"] = lng
+        del data["admin"]
+        data_arr.append(data)
+    df = pd.DataFrame(data_arr)
+    
+    # Move img_name, lat, lng to front of dataframe
+    cols_to_move = ["img_name", "lat", "lng"]
+    for i in range(len(cols_to_move)):
+        col = df.pop(cols_to_move[i])
+        df.insert(i, cols_to_move[i], col)
+        
+    df.to_csv("src/scraping/metadata.csv", index=False)
 
+def coords_to_img():
+    # TODO: retrieve image from google api
+    #img = 
+    
+    pass
 
+def metadata_divide(num_splits):
+    metadata = pd.read_csv("src/scraping/metadata.csv")
+    split_dfs = np.array_split(metadata, num_splits)
+    for i in range(num_splits):
+        split_dfs[i].to_csv(f"src/scraping/metadata_{i}.csv", index=False)
+
+def metadata_train_test_split(train_frac):
+    metadata = pd.read_csv("src/scraping/metadata.csv")
+    train_df = metadata.sample(frac=train_frac)
+    test_df = metadata.drop(train_df.index)
+    train_df.to_csv("images/train/metadata.csv", index=False)
+    test_df.to_csv("images/test/metadata.csv", index=False)
+    
 def main():
-    # Create session, set cookies using retrieved NCFA from login at https://geoguessr.com
-    # session = requests.Session()
-    # session.cookies.set("_ncfa", os.environ["NCFA"], domain="www.geoguessr.com")
-    # id_to_coords(session)
-
     # Use geopy to convert lat, lng to country
-    coords_to_country()
+    coords_to_metadata()
+    metadata_divide(4)
+    return
 
 
 if __name__ == "__main__":
