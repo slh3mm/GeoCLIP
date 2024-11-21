@@ -148,7 +148,7 @@ def metadata_to_huggingface():
     )
 
 
-def imgs_to_huggingface(delete=False):
+def imgs_to_huggingface(delete=True):
     api = HfApi()
     api.upload_folder(
         folder_path=IMG_DIR,
