@@ -1,4 +1,5 @@
 import os
+import shutil
 import requests
 import json
 import time
@@ -95,7 +96,6 @@ def coords_to_metadata():
         data["lng"] = lng
         del data["admin"]
         data_arr.append(data)
-        # if i == 20: break
     df = pd.DataFrame(data_arr)
 
     # Move img_name, lat, lng to front of dataframe
@@ -107,7 +107,7 @@ def coords_to_metadata():
     df.to_csv(METADATA_DIR, index=False)
 
 
-def metadata_to_img(metadata_idx):
+def metadata_to_img(metadata_idx, batch_size=100):
     gsv_url = "https://maps.googleapis.com/maps/api/streetview?"
     metadata_chunk = pd.read_csv(f"{DATA_DIR}/metadata_{metadata_idx}.csv")
     for i, row in metadata_chunk.iterrows():
@@ -124,6 +124,11 @@ def metadata_to_img(metadata_idx):
         if response.status_code == 200:
             with open(f"{IMG_DIR}/{img_name}", "wb") as img_f:
                 img_f.write(response.content)
+        if (i + 1) % batch_size == 0:
+            imgs_to_huggingface()
+            shutil.rmtree(IMG_DIR)
+            os.mkdir(IMG_DIR)
+            break
 
 
 def metadata_divide():
@@ -155,14 +160,9 @@ def imgs_to_huggingface():
     )
 
 
-# id_to_coords() -> coords_to_metadata() -> metadata_divide() -> imgs_to_huggingface() -> metadata_to_huggingface()
+# id_to_coords() -> coords_to_metadata() -> metadata_divide() -> metadata_to_huggingface() -> metadata_to_img()
 def main():
-    # coords_to_metadata()
-    # metadata_divide()
-
-    # metadata_to_img(metadata_idx=0)
-    # imgs_to_huggingface()
-    # metadata_to_huggingface()
+    metadata_to_img(metadata_idx=0)
 
     return
 
