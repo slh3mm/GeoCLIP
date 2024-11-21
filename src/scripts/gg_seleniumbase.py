@@ -9,49 +9,24 @@ load_dotenv()
 
 
 # Initialize Chrome Session
-# with SB(uc=True, incognito=True, locale_code="en") as sb:
-with SB(uc=True, incognito=False, locale_code="en") as sb:
-
+with SB(uc=True, incognito=True, locale_code="en") as sb:
     # Go to geoguessr.com, enter login info, bypass captcha, click login
     sb.driver.uc_open_with_reconnect("https://www.geoguessr.com/signin")
-    sb.sleep(50)
-    # Not always needed for some reason
-    # sb.driver.uc_gui_click_captcha()
+    sb.driver.uc_gui_click_captcha()
 
     # Enter login info automatically
-    # sb.type('[data-qa="email-field"]', os.environ["UNAME"])
-    # sb.type('[data-qa="password-field"]', os.environ["PWORD"])
-    # sb.uc_click('[data-qa="login-cta-button"]', reconnect_time=4)
+    sb.type('[data-qa="email-field"]', os.environ["UNAME"])
+    sb.type('[data-qa="password-field"]', os.environ["PWORD"])
+    sb.uc_click('[data-qa="login-cta-button"]', reconnect_time=4)
 
-    # OR Enter login info manually if auto doesn't work
-    # sb.driver.uc_gui_press_keys("\t\t\t")
-    # sb.driver.sleep(5)
-    # sb.driver.reconnect()
-    # sb.driver.uc_click('[data-qa="email-field"]')
-    # sb.driver.uc_gui_press_keys(os.environ["UNAME"])
-    # sb.driver.uc_gui_press_keys("\t")
-    # sb.driver.uc_gui_press_keys(os.environ["PWORD"])
-    # sb.driver.uc_gui_press_keys("\n")
-
-    # Redirect to game page, press play
-    # If either of these doesn't work then after logging in, add in sb.sleep() and try going to Classic->World->Play
-
-    # Automatic
-    # sb.driver.sleep(1.5)
-    # sb.driver.connect()
-    # sb.driver.get("https://www.geoguessr.com/maps/world/play")
-    # sb.driver.click('[data-qa="start-game-button"]')
-
-    # Manual approach
-    # driver.uc_gui_press_keys("\t\t\t\t\t\t\t\n")
-    # sb.driver.quit()
-    # sb.sleep(15)
+    # Start game
+    sb.driver.get("https://www.geoguessr.com/maps/world/play")
+    sb.driver.click('[data-qa="start-game-button"]')
 
     # Play N_GAMES games, each with 5 rounds
     N_GAMES = 5000
     SAVE_RATE = 5
     game_id_buffer = ""
-    print("Starting game loop")
     for game in range(N_GAMES):
         # Grab game url and game id
         game_url = sb.get_current_url()
