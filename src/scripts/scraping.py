@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from geopy.geocoders import Nominatim, Photon
-from datasets import load_dataset
+from huggingface_hub import HfApi
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -79,8 +79,6 @@ def id_to_coords():
             for game_id in game_ids:
                 for lat, lng in retrieve_coords(game_id, session):
                     coord_f.write(f"{lat}, {lng}\n")
-            coord_f.close()
-        id_f.close()
 
 
 def coords_to_metadata():
@@ -97,6 +95,7 @@ def coords_to_metadata():
         data["lng"] = lng
         del data["admin"]
         data_arr.append(data)
+        # if i == 20: break
     df = pd.DataFrame(data_arr)
 
     # Move img_name, lat, lng to front of dataframe
@@ -108,30 +107,62 @@ def coords_to_metadata():
     df.to_csv(METADATA_DIR, index=False)
 
 
-def coords_to_img():
-    # TODO: retrieve image from google api
-    pass
+def metadata_to_img(metadata_idx):
+    gsv_url = "https://maps.googleapis.com/maps/api/streetview?"
+    metadata_chunk = pd.read_csv(f"{DATA_DIR}/metadata_{metadata_idx}.csv")
+    for i, row in metadata_chunk.iterrows():
+        lat, lng = row["lat"], row["lng"]
+        pic_params = {
+            "key": os.environ["GCP_KEY"],
+            "location": f"{lat},{lng}",
+            "size": "640x640",
+            "heading": "0",
+            "pitch": "0",
+        }
+        img_name = row["img_name"]
+        response = requests.get(gsv_url, params=pic_params)
+        if response.status_code == 200:
+            with open(f"{IMG_DIR}/{img_name}", "wb") as img_f:
+                img_f.write(response.content)
 
 
-def metadata_divide(num_splits):
+def metadata_divide():
+    NUM_SPLITS = 4
     metadata = pd.read_csv(METADATA_DIR)
-    split_dfs = np.array_split(metadata, num_splits)
-    for i in range(num_splits):
+    split_dfs = np.array_split(metadata, NUM_SPLITS)
+    for i in range(NUM_SPLITS):
         split_dfs[i].to_csv(f"{DATA_DIR}/metadata_{i}.csv", index=False)
 
 
-def metadata_train_test_split(train_frac):
-    metadata = pd.read_csv(METADATA_DIR)
-    train_df = metadata.sample(frac=train_frac)
-    test_df = metadata.drop(train_df.index)
-    train_df.to_csv(f"{IMG_DIR}/train/metadata.csv", index=False)
-    test_df.to_csv(f"{IMG_DIR}/test/metadata.csv", index=False)
+def metadata_to_huggingface():
+    api = HfApi()
+    api.upload_file(
+        path_or_fileobj=METADATA_DIR,
+        path_in_repo="metadata.csv",
+        repo_id="slh3mm/gsv_images",
+        repo_type="dataset",
+        token=os.environ["HF_TOKEN"],
+    )
+
+
+def imgs_to_huggingface():
+    api = HfApi()
+    api.upload_folder(
+        folder_path=IMG_DIR,
+        repo_id="slh3mm/gsv_images",
+        repo_type="dataset",
+        token=os.environ["HF_TOKEN"],
+    )
 
 
 def main():
-    # Use geopy to convert lat, lng to country
     coords_to_metadata()
-    metadata_divide(4)
+    metadata_divide()
+
+    # metadata_to_img(metadata_idx=0)
+    # imgs_to_huggingface()
+    # metadata_to_huggingface()
+
     return
 
 
