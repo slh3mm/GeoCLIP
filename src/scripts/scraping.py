@@ -118,7 +118,7 @@ def metadata_to_img(metadata_idx, batch_size=100):
                 "location": f"{lat},{lng}",
                 "size": "640x640",
                 "fov": "90",
-                "pitch": j*90,
+                "heading": j*90,
             }
             img_name = row["img_name"]
             response = requests.get(gsv_url, params=pic_params)
