@@ -112,25 +112,22 @@ def metadata_to_img(metadata_idx, batch_size=100):
     metadata_chunk = pd.read_csv(f"{DATA_DIR}/metadata_{metadata_idx}.csv")
     for i, row in metadata_chunk.iterrows():
         lat, lng = row["lat"], row["lng"]
-        for j in range(3):
+        for j in range(4):
             pic_params = {
                 "key": os.environ["GCP_KEY"],
                 "location": f"{lat},{lng}",
                 "size": "640x640",
                 "fov": "90",
-                "heading": j*90,
+                "heading": str(j*90),
             }
-            img_name = row["img_name"]
+            img_name = row["img_name"][:9]
             response = requests.get(gsv_url, params=pic_params)
             if response.status_code == 200:
-                with open(f"{IMG_DIR}/{img_name}", "wb") as img_f:
+                with open(f"{IMG_DIR}/{img_name}_{j+1}.jpg", "wb") as img_f:
                     img_f.write(response.content)
-            if (i + 1) % batch_size == 0:
-                imgs_to_huggingface()
-                shutil.rmtree(IMG_DIR)
-                os.mkdir(IMG_DIR)
-                break
-
+        if (i + 1) % batch_size == 0:
+            imgs_to_huggingface()
+            
 
 def metadata_divide():
     NUM_SPLITS = 4
@@ -151,7 +148,7 @@ def metadata_to_huggingface():
     )
 
 
-def imgs_to_huggingface():
+def imgs_to_huggingface(delete=False):
     api = HfApi()
     api.upload_folder(
         folder_path=IMG_DIR,
@@ -159,11 +156,15 @@ def imgs_to_huggingface():
         repo_type="dataset",
         token=os.environ["HF_TOKEN"],
     )
+    if delete:
+        shutil.rmtree(IMG_DIR)
+        os.mkdir(IMG_DIR)
 
 
 # id_to_coords() -> coords_to_metadata() -> metadata_divide() -> metadata_to_huggingface() -> metadata_to_img()
 def main():
     metadata_to_img(metadata_idx=0)
+
 
     return
 
