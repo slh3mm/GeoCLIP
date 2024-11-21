@@ -112,23 +112,24 @@ def metadata_to_img(metadata_idx, batch_size=100):
     metadata_chunk = pd.read_csv(f"{DATA_DIR}/metadata_{metadata_idx}.csv")
     for i, row in metadata_chunk.iterrows():
         lat, lng = row["lat"], row["lng"]
-        pic_params = {
-            "key": os.environ["GCP_KEY"],
-            "location": f"{lat},{lng}",
-            "size": "640x640",
-            "heading": "0",
-            "pitch": "0",
-        }
-        img_name = row["img_name"]
-        response = requests.get(gsv_url, params=pic_params)
-        if response.status_code == 200:
-            with open(f"{IMG_DIR}/{img_name}", "wb") as img_f:
-                img_f.write(response.content)
-        if (i + 1) % batch_size == 0:
-            imgs_to_huggingface()
-            shutil.rmtree(IMG_DIR)
-            os.mkdir(IMG_DIR)
-            break
+        for j in range(3):
+            pic_params = {
+                "key": os.environ["GCP_KEY"],
+                "location": f"{lat},{lng}",
+                "size": "640x640",
+                "fov": "90",
+                "pitch": j*90,
+            }
+            img_name = row["img_name"]
+            response = requests.get(gsv_url, params=pic_params)
+            if response.status_code == 200:
+                with open(f"{IMG_DIR}/{img_name}", "wb") as img_f:
+                    img_f.write(response.content)
+            if (i + 1) % batch_size == 0:
+                imgs_to_huggingface()
+                shutil.rmtree(IMG_DIR)
+                os.mkdir(IMG_DIR)
+                break
 
 
 def metadata_divide():
