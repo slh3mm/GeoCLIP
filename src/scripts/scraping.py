@@ -155,9 +155,10 @@ def imgs_to_huggingface():
     )
 
 
+# id_to_coords() -> coords_to_metadata() -> metadata_divide() -> imgs_to_huggingface() -> metadata_to_huggingface()
 def main():
-    coords_to_metadata()
-    metadata_divide()
+    # coords_to_metadata()
+    # metadata_divide()
 
     # metadata_to_img(metadata_idx=0)
     # imgs_to_huggingface()
