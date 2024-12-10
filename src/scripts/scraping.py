@@ -107,7 +107,7 @@ def coords_to_metadata():
     df.to_csv(METADATA_DIR, index=False)
 
 
-def metadata_to_img(metadata_idx, batch_size=100):
+def metadata_to_img(metadata_idx, batch_size=1000):
     gsv_url = "https://maps.googleapis.com/maps/api/streetview?"
     metadata_chunk = pd.read_csv(f"{DATA_DIR}/metadata_{metadata_idx}.csv")
     for i, row in metadata_chunk.iterrows():
@@ -163,8 +163,8 @@ def imgs_to_huggingface(delete=True):
 
 # id_to_coords() -> coords_to_metadata() -> metadata_divide() -> metadata_to_huggingface() -> metadata_to_img()
 def main():
-    metadata_to_img(metadata_idx=0)
-
+    # metadata_to_img(metadata_idx=0)
+    imgs_to_huggingface(delete=False)
 
     return
 
