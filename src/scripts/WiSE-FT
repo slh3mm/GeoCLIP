@@ -1,0 +1,33 @@
+from transformers import CLIPModel
+
+
+def interpolate_weights(zeroshot_checkpoint, finetuned_folder, alpha, outputdir):
+    zero_shot = CLIPModel.from_pretrained(zeroshot_checkpoint)
+    finetuned = CLIPModel.from_pretrained(finetuned_folder)
+    theta_0 = zero_shot.state_dict()
+    theta_1 = finetuned.state_dict()
+    image_prefix = "vision_model"
+    image_theta_0 = {k: v for k,v in theta_0.items() if k.startswith(image_prefix)}
+    image_theta_1 = {k: v for k, v in theta_1.items() if k.startswith(image_prefix)}
+
+    assert set(image_theta_0.keys()) == set(image_theta_1.keys()), "Mismatch in image param encoder parameters"
+
+    interpolated_theta = {
+        key: (1-alpha) * image_theta_0[key] + alpha * image_theta_1[key]
+        for key in image_theta_0.keys()
+    }
+
+    finetuned_state_dict = finetuned.state_dict()
+
+    finetuned_state_dict.update(interpolated_theta)
+    finetuned.load_state_dict(finetuned_state_dict)
+    finetuned.save_pretrained(outputdir)
+
+if '__name__' == '__main__':
+
+    zeroshot_checkpoint = 'laion/CLIP-ViT-H-14-laion2B-s32B-b79K'
+    finetuned_folder = 'large-clip-scheduler'
+    alpha = 0.5
+    output = 'wiseft-.5'
+
+    interpolate_weights(zeroshot_checkpoint, finetuned_folder, alpha, output)
